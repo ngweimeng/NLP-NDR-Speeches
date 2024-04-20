@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from textblob import TextBlob
 from sklearn.feature_extraction.text import TfidfVectorizer
+import matplotlib.ticker as ticker
 import numpy as np
 
 # Page configuration
-st.set_page_config(page_title="PM Lee's NDR Speeches", layout='wide', page_icon='🇸🇬')
+st.set_page_config(page_title="NLP - PM Lee's Speeches", layout='wide', page_icon='🇸🇬')
 
 # Column setup for image and main title
 col1, col2 = st.columns([1, 3])
@@ -79,6 +80,42 @@ def display_wordclouds(dense, feature_names, title_suffix):
     ax.set_title(f"{title_suffix} for Year {year_to_display}")
     return fig
 
+### Display Text Summarization section
+st.header(f"Text Analysis for {year_to_display}")
+
+# Column setup for text summarization and word count analysis
+col1, col2 = st.columns(2)
+
+# Text Summarization column
+with col1:
+    st.subheader("Text Summarization")
+    st.info("""
+    The summaries below are generated using the OpenAI API, employing language modeling to distill key information from each speech.
+    """)
+    selected_summary = df[df['Year'] == year_to_display]['Summary'].iloc[0]
+    st.write(selected_summary)
+
+# Word Count Analysis and Word Count over the years column
+with col2:
+    st.subheader(f"Word Count Analysis")
+    st.info("""
+    The word count metric serves as a quantitative measure of the speech's extent and the comprehensiveness of the topics addressed by PM Lee within the given year.
+    """)
+    word_count = df[df['Year'] == year_to_display]['Word_Count'].iloc[0]
+    st.write(f"The length of the speech for the year {year_to_display} is **{word_count} words**.")
+
+    # Plot the changes in word count over the years
+    st.subheader("Word Count Trend Over Years")
+    fig, ax = plt.subplots()
+    ax.plot(df['Year'], df['Word_Count'], marker='o', linestyle='-')
+    ax.set_xlabel('Year')
+    ax.set_ylabel('Word Count')
+    ax.set_title('Word Count Trend Over Years')
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))  # Ensure x-axis has only integer labels
+    ax.grid(True)
+    st.pyplot(fig)
+
+### Word Cloud Section
 st.header(f"Word Clouds for {year_to_display}")
 
 # Explanation of the word cloud generation process
