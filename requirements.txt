@@ -1,8 +1,9 @@
 streamlit
 pandas
-matplotlib
 wordcloud
 textblob
 scikit-learn
 gensim
 plotly
+pyLDAvis
+scipy==1.10.1

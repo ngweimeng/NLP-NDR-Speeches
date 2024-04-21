@@ -4,11 +4,10 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from textblob import TextBlob
 from sklearn.feature_extraction.text import TfidfVectorizer
-import matplotlib.ticker as ticker
+from sklearn.decomposition import NMF
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
-
 
 # Page configuration
 st.set_page_config(page_title="NLP - PM Lee's Speeches", layout='wide', page_icon='🇸🇬')
@@ -32,7 +31,7 @@ For more details on the project or to contribute, please visit the [GitHub repos
 """)
 
 # Column setup for image and main title
-col1, col2 = st.columns([1, 1.5])
+col1, col2 = st.columns([1, 1.2])
 
 # Using the first column for the image
 with col1:
@@ -57,6 +56,29 @@ def load_data():
     return pd.read_csv("data/output.csv")
 
 df = load_data()
+
+# Year and Analysis Type selection
+col_year, col_analysis = st.columns([1, 2])
+with col_year:
+    year_to_display = st.selectbox(
+        'Select Year:',
+        options=sorted(df['Year'].unique()),  # Ensure years are sorted
+        index=len(df['Year'].unique()) - 1  # Default to the most recent year
+    )
+
+# Display warning for 2020
+if year_to_display == 2020:
+    st.warning(
+        "The 2020 rally was cancelled due to the COVID-19 pandemic. Instead, PM Lee's National Day Message is analyzed. "
+        "Please note, this may cause deviations from typical data patterns."
+    )
+
+with col_analysis:
+    analysis_type = st.selectbox(
+        'Select Analysis:',
+        options=['Speech Summary','Word Count','Word Cloud', 'Sentiment Analysis','Topic Modeling'],
+        index=0  # Default to the first analysis type
+    )
 
 # Vectorize all speeches for single grams
 vectorizer_single = TfidfVectorizer(max_df=0.7)
@@ -98,29 +120,6 @@ def get_sentiment_over_time(df):
 # Calculate sentiment over time
 sentiment_over_time = get_sentiment_over_time(df)
 
-# Year and Analysis Type selection
-col_year, col_analysis = st.columns([1, 2])
-with col_year:
-    year_to_display = st.selectbox(
-        'Select Year:',
-        options=sorted(df['Year'].unique()),  # Ensure years are sorted
-        index=len(df['Year'].unique()) - 1  # Default to the most recent year
-    )
-
-# Display warning for 2020
-if year_to_display == 2020:
-    st.warning(
-        "The 2020 rally was cancelled due to the COVID-19 pandemic. Instead, PM Lee's National Day Message is analyzed. "
-        "Please note, this may cause deviations from typical data patterns."
-    )
-
-with col_analysis:
-    analysis_type = st.selectbox(
-        'Select Analysis:',
-        options=['Speech Summary','Word Count','Word Cloud', 'Sentiment Analysis'],
-        index=0  # Default to the first analysis type
-    )
-
 ### Speech Summary section
 if analysis_type == 'Speech Summary':
     st.header(f"Speech Summary for {year_to_display}")
@@ -129,6 +128,11 @@ if analysis_type == 'Speech Summary':
 
     The summaries are derived from an automated analysis using the OpenAI API, which applies natural language processing techniques to distill core information from PM Lee's speeches. This method systematically summarizes key content, providing a concise overview for better readability.
     """)
+    # Fetch the URL for the full speech
+    speech_url = df[df['Year'] == year_to_display]['URL'].iloc[0]
+    st.markdown(f"[Click here for the full speech]({speech_url})", unsafe_allow_html=True)
+
+    # Fetch Speech Summary
     selected_summary = df[df['Year'] == year_to_display]['Summary'].iloc[0]
     st.write(selected_summary)
 
@@ -251,18 +255,33 @@ Understanding sentiment polarity helps stakeholders gauge the optimism or concer
         st.metric("Sentiment Subjectivity (Objective to Subjective)", f"{subjectivity:.2f}", delta=delta_subjectivity_text)
 
     # Prepare data for Plotly
+    import plotly.graph_objs as go
+
+    # Prepare data for Plotly
     df_polarity = sentiment_over_time[['Year', 'sentiment_polarity']]
     df_subjectivity = sentiment_over_time[['Year', 'sentiment_subjectivity']]
 
     # Sentiment Polarity Over Time Plot
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(x=df_polarity['Year'], y=df_polarity['sentiment_polarity'], mode='lines+markers', name='Polarity'))
-    fig1.update_layout(title="Sentiment Polarity Over Time", xaxis_title='Year', yaxis_title='Sentiment Polarity', yaxis=dict(range=[-1,1]))
+    fig1.update_layout(
+        title="Sentiment Polarity Over Time",
+        xaxis_title='Year',
+        yaxis_title='Sentiment Polarity',
+        xaxis=dict(tickmode='linear', tick0=df_polarity['Year'].min(), dtick=1),  
+        yaxis=dict(range=[-0.2, 0.2])  
+    )
 
     # Sentiment Subjectivity Over Time Plot
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=df_subjectivity['Year'], y=df_subjectivity['sentiment_subjectivity'], mode='lines+markers', name='Subjectivity'))
-    fig2.update_layout(title="Sentiment Subjectivity Over Time", xaxis_title='Year', yaxis_title='Sentiment Subjectivity', yaxis=dict(range=[0,1]))
+    fig2.update_layout(
+        title="Sentiment Subjectivity Over Time",
+        xaxis_title='Year',
+        yaxis_title='Sentiment Subjectivity',
+        xaxis=dict(tickmode='linear', tick0=df_subjectivity['Year'].min(), dtick=1),  
+        yaxis=dict(range=[0.2, 0.6])  
+    )
 
     # Display plots in columns
     col1, col2 = st.columns(2)
@@ -270,3 +289,35 @@ Understanding sentiment polarity helps stakeholders gauge the optimism or concer
         st.plotly_chart(fig1, use_container_width=True)
     with col2:
         st.plotly_chart(fig2, use_container_width=True)
+
+### Topic Modeling Section
+elif analysis_type == 'Topic Modeling':
+    st.header(f"Topic Modeling for {year_to_display}")
+    st.info("""
+    **Understanding Topic Modeling:**
+
+    Topic modeling is a type of statistical modeling for discovering abstract topics that occur in a collection of documents. It is an unsupervised learning approach that identifies patterns and key themes by clustering similar words together across the document corpus.
+    
+    Below are the topics modeled from PM Lee's speeches across all years, with emphasis on the relevance to the speech of the selected year. The importance of each topic for the selected speech is highlighted to show the major themes discussed.
+    """)
+
+    # Perform TF-IDF vectorization on the entire dataset
+    vectorizer = TfidfVectorizer(min_df=2, stop_words='english')
+    dtm = vectorizer.fit_transform(df['processed_speech'])
+
+    # Fit the NMF model on the entire dataset
+    nmf_model = NMF(n_components=8, random_state=42)
+    nmf_model.fit(dtm)
+
+    # Extract the feature names and topic weights for the document of the selected year
+    document_index = df.index[df['Year'] == year_to_display].tolist()[0]
+    document_topics = nmf_model.transform(dtm[document_index])
+
+    # Sort topics by the weight in descending order
+    sorted_topics = sorted(enumerate(document_topics.flatten()), key=lambda x: x[1], reverse=True)
+
+    # Display the topics and their top words in descending order of weight ('relevance')
+    for index, weight in sorted_topics:
+        st.subheader(f"Topic {index + 1} - Relevance: {weight:.2f}")
+        top_words = [vectorizer.get_feature_names_out()[i] for i in nmf_model.components_[index].argsort()[-10:]]
+        st.write(" ".join(top_words))
