@@ -5,3 +5,4 @@ wordcloud
 textblob
 scikit-learn
 gensim
+plotly

@@ -6,12 +6,33 @@ from textblob import TextBlob
 from sklearn.feature_extraction.text import TfidfVectorizer
 import matplotlib.ticker as ticker
 import numpy as np
+import plotly.express as px
+import plotly.graph_objs as go
+
 
 # Page configuration
 st.set_page_config(page_title="NLP - PM Lee's Speeches", layout='wide', page_icon='🇸🇬')
 
+# Sidebar with information about the data source and disclaimer
+st.sidebar.title("About This Project")
+
+st.sidebar.markdown("""
+### Data Source
+This analysis uses data collected via web scraping from the [Prime Minister's Office website](https://www.pmo.gov.sg/). The dataset comprises speeches delivered by Prime Minister Lee Hsien Loong at his National Day Rallies.
+""")
+
+# Using a warning to highlight the disclaimer
+st.sidebar.warning("""
+**Disclaimer:** The analyses and visualizations are for academic purposes only and do not represent political opinions or endorsements. Interpretations are strictly computational and do not reflect personal views.
+""")
+
+st.sidebar.markdown("""
+### GitHub Repository
+For more details on the project or to contribute, please visit the [GitHub repository](https://github.com/ngweimeng/NLP-NDR-Speeches).
+""")
+
 # Column setup for image and main title
-col1, col2 = st.columns([1, 3])
+col1, col2 = st.columns([1, 1.5])
 
 # Using the first column for the image
 with col1:
@@ -22,19 +43,13 @@ with col2:
     st.title("Leadership in Words - Unpacking PM Lee’s National Day Speeches with Natural Language Processing")
 
 # About the project section
-st.header('About the Project')
 st.markdown("""
-            In anticipation of Prime Minister Lee Hsien Loong’s handover of leadership to DPM Lawrence Wong in May 2024, this analysis has been crafted to honor his significant contributions to the nation of Singapore. The project dissects the series of PM Lee’s National Day Rally speeches, showcasing his leadership and influence through the lens of Natural Language Processing.
+            In anticipation of Prime Minister Lee Hsien Loong’s handover of leadership to DPM Lawrence Wong in May 2024, this analysis has been crafted to honor his significant contributions to Singapore. The project dissects the series of PM Lee’s National Day Rally speeches, showcasing his leadership and influence through the lens of Natural Language Processing.
             
             As we approach this moment of transition, we express our sincere appreciation for PM Lee's years of unwavering dedication to Singapore’s growth and prosperity. 
 
             **Thank you Prime Minister Lee Hsien Loong Sir**!
 """)
-
-# Interactive slider for selecting a year
-#title = 'Slide to select a year:'
-#year = st.slider(title, min_value=2004, max_value=2023)
-#st.write('You selected:', year)
 
 # Load data
 @st.cache_data
@@ -43,7 +58,7 @@ def load_data():
 
 df = load_data()
 
-# Vectorize all speeches at once with adjusted max_df for single grams
+# Vectorize all speeches for single grams
 vectorizer_single = TfidfVectorizer(max_df=0.7)
 X_single = vectorizer_single.fit_transform(df['processed_speech'])
 feature_names_single = vectorizer_single.get_feature_names_out()
@@ -55,13 +70,7 @@ X_bigram = vectorizer_bigram.fit_transform(df['processed_speech'])
 feature_names_bigram = vectorizer_bigram.get_feature_names_out()
 dense_bigram = X_bigram.todense()
 
-# Select a year for display and analysis
-year_to_display = st.slider('Select a year to display NLP Analytics:', 
-                            min_value=int(df['Year'].min()), 
-                            max_value=int(df['Year'].max()), 
-                            value=int(df['Year'].min()))
-
-# Display word clouds and sentiment analysis
+# Function to display word cloud
 def display_wordclouds(dense, feature_names, title_suffix):
     idx = df.index[df['Year'] == year_to_display].tolist()[0]
     denselist = dense[idx].tolist()[0]
@@ -80,70 +89,6 @@ def display_wordclouds(dense, feature_names, title_suffix):
     ax.set_title(f"{title_suffix} for Year {year_to_display}")
     return fig
 
-### Display Text Summarization section
-st.header(f"Text Analysis for {year_to_display}")
-
-# Column setup for text summarization and word count analysis
-col1, col2 = st.columns(2)
-
-# Text Summarization column
-with col1:
-    st.subheader("Text Summarization")
-    st.info("""
-    The summaries below are generated using the OpenAI API, employing language modeling to distill key information from each speech.
-    """)
-    selected_summary = df[df['Year'] == year_to_display]['Summary'].iloc[0]
-    st.write(selected_summary)
-
-# Word Count Analysis and Word Count over the years column
-with col2:
-    st.subheader(f"Word Count Analysis")
-    st.info("""
-    The word count metric serves as a quantitative measure of the speech's extent and the comprehensiveness of the topics addressed by PM Lee within the given year.
-    """)
-    word_count = df[df['Year'] == year_to_display]['Word_Count'].iloc[0]
-    st.write(f"The length of the speech for the year {year_to_display} is **{word_count} words**.")
-
-    # Plot the changes in word count over the years
-    st.subheader("Word Count Trend Over Years")
-    fig, ax = plt.subplots()
-    ax.plot(df['Year'], df['Word_Count'], marker='o', linestyle='-')
-    ax.set_xlabel('Year')
-    ax.set_ylabel('Word Count')
-    ax.set_title('Word Count Trend Over Years')
-    ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))  # Ensure x-axis has only integer labels
-    ax.grid(True)
-    st.pyplot(fig)
-
-### Word Cloud Section
-st.header(f"Word Clouds for {year_to_display}")
-
-# Explanation of the word cloud generation process
-st.info("""
-The word clouds generated here are visual representations of the most prominent words found in PM Lee's speeches for the selected year. They are created using a method known as TF-IDF (Term Frequency-Inverse Document Frequency) which evaluates how relevant a word is to a document in a collection of documents. This relevance is shown by the size of the word in the visualization.
-
-Here's the process:
-
-1. **Term Frequency (TF)**: We count how many times each word appears in the speech.
-2. **Inverse Document Frequency (IDF)**: We calculate a score that diminishes the weight of terms that occur very frequently across the speech corpus and increases the weight of terms that occur rarely.
-3. **TF-IDF**: The two scores are multiplied to determine the importance of each word within the speech for the selected year.
-4. **Visualization**: The most important words are then displayed in the word cloud, with larger sizes indicating higher TF-IDF scores.
-
-This technique helps us to extract key themes and terms that Prime Minister Lee emphasized during that year's address.
-""")
-
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("Single Grams")
-    fig_single = display_wordclouds(dense_single, feature_names_single, "Single Gram")
-    st.pyplot(fig_single)
-
-with col2:
-    st.subheader("Bi-grams")
-    fig_bigram = display_wordclouds(dense_bigram, feature_names_bigram, "Bi-gram")
-    st.pyplot(fig_bigram)
-
-# Sentiment analysis
 # Function to perform sentiment analysis across all speeches
 def get_sentiment_over_time(df):
     df['sentiment_polarity'] = df['processed_speech'].apply(lambda x: TextBlob(x).sentiment.polarity)
@@ -153,50 +98,175 @@ def get_sentiment_over_time(df):
 # Calculate sentiment over time
 sentiment_over_time = get_sentiment_over_time(df)
 
-# Display sentiment analysis
-st.header(f"Sentiment Analysis for {year_to_display}")
+# Year and Analysis Type selection
+col_year, col_analysis = st.columns([1, 2])
+with col_year:
+    year_to_display = st.selectbox(
+        'Select Year:',
+        options=sorted(df['Year'].unique()),  # Ensure years are sorted
+        index=len(df['Year'].unique()) - 1  # Default to the most recent year
+    )
 
-# Display detailed sentiment for the selected year
-selected_speech_sentiment = sentiment_over_time[sentiment_over_time['Year'] == year_to_display]
-polarity = selected_speech_sentiment['sentiment_polarity'].values[0]
-subjectivity = selected_speech_sentiment['sentiment_subjectivity'].values[0]
+# Display warning for 2020
+if year_to_display == 2020:
+    st.warning(
+        "The 2020 rally was cancelled due to the COVID-19 pandemic. Instead, PM Lee's National Day Message is analyzed. "
+        "Please note, this may cause deviations from typical data patterns."
+    )
 
-# Explain sentiment terms
-st.info("""
-**Sentiment Polarity** indicates the positivity or negativity of the text. A score of -1 signifies extreme negativity, 0 neutrality, and 1 extreme positivity.
+with col_analysis:
+    analysis_type = st.selectbox(
+        'Select Analysis:',
+        options=['Speech Summary','Word Count','Word Cloud', 'Sentiment Analysis'],
+        index=0  # Default to the first analysis type
+    )
 
-**Sentiment Subjectivity** quantifies the amount of personal opinion and factual information contained in the text. A score of 0 is very objective, and 1 is very subjective.
+### Speech Summary section
+if analysis_type == 'Speech Summary':
+    st.header(f"Speech Summary for {year_to_display}")
+    st.info("""
+    **Understanding Summary Generation:**
+
+    The summaries are derived from an automated analysis using the OpenAI API, which applies natural language processing techniques to distill core information from PM Lee's speeches. This method systematically identifies and summarizes key content, providing a concise overview for enhanced readability and quick reference.
+    """)
+    selected_summary = df[df['Year'] == year_to_display]['Summary'].iloc[0]
+    st.write(selected_summary)
+
+### Word Count section
+elif analysis_type == 'Word Count':
+    st.header(f"Word Count for {year_to_display}")
+    st.info("""
+    **Understanding Word Count Metrics:**
+    
+    The word count analysis provides insights into the length and detail of each speech by PM Lee. Analyzing word count helps identify trends in speech length over time, which can reflect changes in policy focus, communication strategy, or event context. For instance, longer speeches might indicate more comprehensive coverage of topics, significant announcements, or detailed explanations of complex issues. Conversely, shorter speeches might suggest a more focused or concise communication approach.
+    
+    This analysis can be particularly useful for understanding shifts in governance and communication strategy across different periods or in response to specific events.
+    """)
+    # Setup columns for metric and chart
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        current_word_count = df[df['Year'] == year_to_display]['Word_Count'].iloc[0]
+        previous_year = year_to_display - 1
+        if previous_year in df['Year'].values:
+            previous_word_count = df[df['Year'] == previous_year]['Word_Count'].iloc[0]
+            delta = current_word_count - previous_word_count
+        else:
+            delta = None  # No data for the previous year
+
+        # Use Streamlit's metric for a cleaner display with delta
+        if delta is not None:
+            st.metric(label=f"Word Count for {year_to_display}", value=f"{current_word_count} words", delta=f"{delta} words")
+        else:
+            st.metric(label=f"Word Count for {year_to_display}", value=f"{current_word_count} words", delta="No previous data")
+    
+    with col2:
+        # Plot Word Count Trend using Plotly for an interactive chart
+        fig = px.line(
+            df, 
+            x='Year', 
+            y='Word_Count', 
+            markers=True,
+            title='Word Count Trend Over Years'
+        )
+        fig.update_layout(
+            xaxis=dict(tickmode='array', tickvals=sorted(df['Year'].unique())),
+            yaxis_title='Word Count',
+            xaxis_title='Year'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+### Word Cloud Section
+elif analysis_type == 'Word Cloud':
+    st.header(f"Word Clouds for {year_to_display}")
+
+    # Explanation of the word cloud generation process
+    st.info("""
+    **Understanding Word Clouds:**
+            
+    The word clouds generated here are visual representations of the most prominent words found in PM Lee's speeches for the selected year. They are created using a method known as TF-IDF (Term Frequency-Inverse Document Frequency) which evaluates how relevant a word is to a document in a collection of documents. This relevance is shown by the size of the word in the visualization.
+
+    Here's the process:
+
+    1. **Term Frequency (TF)**: We count how many times each word appears in the speech.
+    2. **Inverse Document Frequency (IDF)**: We calculate a score that diminishes the weight of terms that occur very frequently across the speech corpus and increases the weight of terms that occur rarely.
+    3. **TF-IDF**: The two scores are multiplied to determine the importance of each word within the speech for the selected year.
+    4. **Visualization**: The most important words are then displayed in the word cloud, with larger sizes indicating higher TF-IDF scores.
+
+    This technique helps us to extract key themes and terms that Prime Minister Lee emphasized during that year's address.
+    """)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Single Grams")
+        fig_single = display_wordclouds(dense_single, feature_names_single, "Single Gram")
+        st.pyplot(fig_single)
+
+    with col2:
+        st.subheader("Bi-grams")
+        fig_bigram = display_wordclouds(dense_bigram, feature_names_bigram, "Bi-gram")
+        st.pyplot(fig_bigram)
+
+### Sentiment Analysis Section
+elif analysis_type == 'Sentiment Analysis':
+
+    st.header(f"Sentiment Analysis for {year_to_display}")
+
+    # Explain sentiment terms
+    st.info("""
+**Understanding Sentiment Analysis:**
+
+Sentiment Analysis is employed to gauge the emotional tone behind a series of speeches by PM Lee, offering insights into the mood and communicative intent of his addresses during various national events.
+
+- **Sentiment Polarity**: This metric calculates the overall sentiment of the text from highly negative (-1), neutral (0), to highly positive (+1), based on the use of language and phrasing. The analysis is done through natural language processing algorithms that evaluate word and phrase choices to determine sentiment.
+- **Sentiment Subjectivity**: This measure assesses whether the text is more subjective (opinionated) or objective (factual), with scores ranging from 0 (fully objective) to 1 (highly subjective). This is crucial for distinguishing between factual reporting and personal opinion in speeches.
+
+Understanding sentiment polarity helps stakeholders gauge the optimism or concern in the leadership's messaging, which can be crucial for predicting policy directions or public sentiment. Knowing the level of subjectivity in speeches can also aid communications teams in aligning future speeches with desired tones, whether aiming for more factual presentations or engaging narratives that resonate on a personal level.
 """)
 
-st.markdown(f"**Sentiment Polarity (Negative to Positive):** `{polarity:.2f}` (Scale: -1 to 1)")
-st.markdown(f"**Sentiment Subjectivity (Objective to Subjective):** `{subjectivity:.2f}` (Scale: 0 to 1)")
+    # Fetching sentiment data for the selected year
+    selected_speech_sentiment = sentiment_over_time[sentiment_over_time['Year'] == year_to_display]
+    polarity = selected_speech_sentiment['sentiment_polarity'].values[0]
+    subjectivity = selected_speech_sentiment['sentiment_subjectivity'].values[0]
 
-# Make sure 'Year' column is of integer type for proper x-axis labeling
-df['Year'] = df['Year'].astype(int)
-sentiment_over_time['Year'] = sentiment_over_time['Year'].astype(int)
+    # Calculate delta values
+    previous_year = year_to_display - 1
+    if previous_year in sentiment_over_time['Year'].values:
+        previous_sentiment = sentiment_over_time[sentiment_over_time['Year'] == previous_year]
+        previous_polarity = previous_sentiment['sentiment_polarity'].values[0]
+        previous_subjectivity = previous_sentiment['sentiment_subjectivity'].values[0]
+        delta_polarity = polarity - previous_polarity
+        delta_subjectivity = subjectivity - previous_subjectivity
+        delta_polarity_text = f"{delta_polarity:+.2f}"
+        delta_subjectivity_text = f"{delta_subjectivity:+.2f}"
+    else:
+        delta_polarity_text = "N/A"
+        delta_subjectivity_text = "N/A"
 
-# Plot sentiment polarity and subjectivity over time as line charts
-st.subheader("Sentiment Trends Over Time")
-col1, col2 = st.columns(2)
+    # Display sentiment metrics with deltas
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Sentiment Polarity (Negative to Positive)", f"{polarity:.2f}", delta=delta_polarity_text)
+    with col2:
+        st.metric("Sentiment Subjectivity (Objective to Subjective)", f"{subjectivity:.2f}", delta=delta_subjectivity_text)
 
-with col1:
-    st.markdown("#### Sentiment Polarity Over Time")
-    fig1, ax1 = plt.subplots()
-    ax1.plot(sentiment_over_time['Year'], sentiment_over_time['sentiment_polarity'], marker='o', color='blue')
-    ax1.set_xlabel('Year')
-    ax1.set_ylabel('Sentiment Polarity')
-    ax1.set_ylim([-1, 1])
-    ax1.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set x-axis major ticks to integer values
-    ax1.grid(True)
-    st.pyplot(fig1)
+    # Prepare data for Plotly
+    df_polarity = sentiment_over_time[['Year', 'sentiment_polarity']]
+    df_subjectivity = sentiment_over_time[['Year', 'sentiment_subjectivity']]
 
-with col2:
-    st.markdown("#### Sentiment Subjectivity Over Time")
-    fig2, ax2 = plt.subplots()
-    ax2.plot(sentiment_over_time['Year'], sentiment_over_time['sentiment_subjectivity'], marker='o', color='orange')
-    ax2.set_xlabel('Year')
-    ax2.set_ylabel('Sentiment Subjectivity')
-    ax2.set_ylim([0, 1])
-    ax2.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set x-axis major ticks to integer values
-    ax2.grid(True)
-    st.pyplot(fig2)
+    # Sentiment Polarity Over Time Plot
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=df_polarity['Year'], y=df_polarity['sentiment_polarity'], mode='lines+markers', name='Polarity'))
+    fig1.update_layout(title="Sentiment Polarity Over Time", xaxis_title='Year', yaxis_title='Sentiment Polarity', yaxis=dict(range=[-1,1]))
+
+    # Sentiment Subjectivity Over Time Plot
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=df_subjectivity['Year'], y=df_subjectivity['sentiment_subjectivity'], mode='lines+markers', name='Subjectivity'))
+    fig2.update_layout(title="Sentiment Subjectivity Over Time", xaxis_title='Year', yaxis_title='Sentiment Subjectivity', yaxis=dict(range=[0,1]))
+
+    # Display plots in columns
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(fig1, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig2, use_container_width=True)
