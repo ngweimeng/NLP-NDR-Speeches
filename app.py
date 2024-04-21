@@ -127,7 +127,7 @@ if analysis_type == 'Speech Summary':
     st.info("""
     **Understanding Summary Generation:**
 
-    The summaries are derived from an automated analysis using the OpenAI API, which applies natural language processing techniques to distill core information from PM Lee's speeches. This method systematically identifies and summarizes key content, providing a concise overview for enhanced readability and quick reference.
+    The summaries are derived from an automated analysis using the OpenAI API, which applies natural language processing techniques to distill core information from PM Lee's speeches. This method systematically summarizes key content, providing a concise overview for better readability.
     """)
     selected_summary = df[df['Year'] == year_to_display]['Summary'].iloc[0]
     st.write(selected_summary)
