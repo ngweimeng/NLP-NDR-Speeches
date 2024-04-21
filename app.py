@@ -268,7 +268,7 @@ Understanding sentiment polarity helps stakeholders gauge the optimism or concer
         title="Sentiment Polarity Over Time",
         xaxis_title='Year',
         yaxis_title='Sentiment Polarity',
-        xaxis=dict(tickmode='linear', tick0=df_polarity['Year'].min(), dtick=1),  
+        xaxis=dict(tickmode='array', tickvals=sorted(df['Year'].unique())),  
         yaxis=dict(range=[-0.2, 0.2])  
     )
 
@@ -279,10 +279,9 @@ Understanding sentiment polarity helps stakeholders gauge the optimism or concer
         title="Sentiment Subjectivity Over Time",
         xaxis_title='Year',
         yaxis_title='Sentiment Subjectivity',
-        xaxis=dict(tickmode='linear', tick0=df_subjectivity['Year'].min(), dtick=1),  
+        xaxis=dict(tickmode='array', tickvals=sorted(df['Year'].unique())),  
         yaxis=dict(range=[0.2, 0.6])  
     )
-
     # Display plots in columns
     col1, col2 = st.columns(2)
     with col1:
