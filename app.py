@@ -362,27 +362,32 @@ elif analysis_type == 'Topic Modeling':
     heatmap_df.columns = heatmap_df.columns.astype(str)  # Convert the year column names to string if they are not already
 
     # Create the heatmap using Plotly
-    fig = px.imshow(heatmap_df,
-                    labels=dict(x="Year", y="Topic", color="Relevance"),
-                    x=heatmap_df.columns,  
-                    y=heatmap_df.index,  
-                    aspect="auto",
-                    color_continuous_scale='YlGnBu')
-    fig.update_xaxes(side="bottom")
-    fig.update_layout(title_text='Trend of Topics Over the Years', title_x=0.5, yaxis=dict(tickmode='array', tickvals=np.arange(len(topic_names))))
-
-    fig.update_layout(autosize=False, margin=dict(t=50, l=10, r=10, b=10))
-    
-    fig.update_layout(xaxis=dict(
-        tickmode='linear',
-        tick0=0,
-        dtick=1  # Display a tick for every single year increment
+    fig = px.imshow(
+    heatmap_df.T,  # Transpose the DataFrame
+    labels=dict(x="Topic", y="Year", color="Relevance"),
+    x=heatmap_df.index,  # Topics are now on the x-axis
+    y=heatmap_df.columns,  # Years are now on the y-axis
+    aspect="auto",
+    color_continuous_scale='YlGnBu'
     )
-)
+
+    # Rotate the x-axis labels (topics) for better readability
+    fig.update_xaxes(tickangle=-45)
+
+    # Update the y-axis ticks to ensure all years are displayed
+    fig.update_yaxes(
+        tickmode='linear',
+        tick0=heatmap_df.columns.min(),
+        dtick=1  # Display a tick for every year increment
+    )
+
+    # Add titles and adjust layout
     fig.update_layout(
-    xaxis_tickangle=-45  # Rotate the labels by -45 degrees
-)
-    fig.update_layout(
-    yaxis_tickangle=-45  # Rotate the labels by -45 degrees
-)
+        title_text='Trend of Topics Over the Years', 
+        title_x=0.5, 
+        autosize=False, 
+        margin=dict(t=50, l=10, r=10, b=10)
+    )
+
+    # Display the plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
