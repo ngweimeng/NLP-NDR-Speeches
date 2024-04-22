@@ -13,7 +13,6 @@ import plotly.graph_objs as go
 st.set_page_config(page_title="NLP - PM Lee's Speeches", layout='wide', page_icon='🇸🇬')
 
 # Sidebar with information about the data source and disclaimer
-st.sidebar.title("About This Project")
 
 st.sidebar.markdown("""
 ### Data Source
@@ -22,7 +21,7 @@ This analysis uses data collected via web scraping from the [Prime Minister's Of
 
 # Using a warning to highlight the disclaimer
 st.sidebar.warning("""
-**Disclaimer:** The analyses and visualizations are for academic purposes only and do not represent political opinions or endorsements. Interpretations are strictly computational and do not reflect personal views.
+**Disclaimer:** The analysis and visualizations are for academic purposes only and do not represent political opinions or endorsements. Interpretations are strictly computational and do not reflect personal views.
 """)
 
 st.sidebar.markdown("""
@@ -42,6 +41,7 @@ with col2:
     st.title("Leadership in Words - Unpacking PM Lee’s National Day Speeches with Natural Language Processing")
 
 # About the project section
+st.markdown("## About This Project")
 st.markdown("""
             In anticipation of Prime Minister Lee Hsien Loong’s handover of leadership to DPM Lawrence Wong in May 2024, this project has been crafted to honor his significant contributions to Singapore. The project dissects the series of PM Lee’s National Day Rally speeches, showcasing his leadership and influence through the lens of Natural Language Processing.
             
@@ -295,7 +295,7 @@ elif analysis_type == 'Topic Modeling':
     st.info("""
     **Understanding Topic Modeling with NMF:**
 
-    We utilize Non-negative Matrix Factorization (NMF), a group of algorithms in multivariate analysis and linear algebra, to analyze speeches. NMF identifies topics by decomposing the large document-term matrix, derived from the transcripts, into two meaningful smaller matrices - one representing the relationship between documents and topics, the other between topics and terms.
+    We utilize Non-negative Matrix Factorization (NMF), a group of algorithms in multivariate analysis and linear algebra, to analyze speeches. NMF identifies topics by decomposing the large document-term matrix, derived from the transcripts, into two meaningful smaller matrices - one representing the relationship between documents and topics, the other between topics and terms. Read more about [NMF here](https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html).
 
     After running trials, NMF with 5 topics was chosen for its interpretability. This method helps reveal the underlying themes, as indicated by clusters of co-occurring words, thus suggesting the focal points of each speech. Here’s what each topic encompasses:
 
