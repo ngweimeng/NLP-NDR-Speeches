@@ -293,30 +293,90 @@ Understanding sentiment polarity helps stakeholders gauge the optimism or concer
 elif analysis_type == 'Topic Modeling':
     st.header(f"Topic Modeling for {year_to_display}")
     st.info("""
-    **Understanding Topic Modeling:**
+    **Understanding Topic Modeling with NMF:**
 
-    Topic modeling is a type of statistical modeling for discovering abstract topics that occur in a collection of documents. It is an unsupervised learning approach that identifies patterns and key themes by clustering similar words together across the document corpus.
-    
-    Below are the topics modeled from PM Lee's speeches across all years, with emphasis on the relevance to the speech of the selected year. The importance of each topic for the selected speech is highlighted to show the major themes discussed.
-    """)
+    We utilize Non-negative Matrix Factorization (NMF), a group of algorithms in multivariate analysis and linear algebra, to analyze speeches. NMF identifies topics by decomposing the large document-term matrix, derived from the transcripts, into two meaningful smaller matrices - one representing the relationship between documents and topics, the other between topics and terms.
+
+    After running trials, NMF with 5 topics was chosen for its interpretability. This method helps reveal the underlying themes, as indicated by clusters of co-occurring words, thus suggesting the focal points of each speech. Here’s what each topic encompasses:
+
+    - **Global Engagement**: International relations, trade, technological competition.
+    - **National Crisis Response**: Strategies for public health emergencies, legal frameworks, operational logistics.
+    - **Community Development**: Urban planning, housing policy, community welfare, support for the elderly.
+    - **Lifestyle Education**: Public health, preventive healthcare education, family support programs.
+    - **Cultural Identity**: Social fabric, religious harmony, multiculturalism, national unity.
+
+    Below is a heatmap visualization, presenting how these topics trend over the years, offering insights into the evolution of discourse and policy emphasis in Singapore.
+""")
+
+    # Topic names mapping
+    topic_names = {
+        "Topic 1": "Global Engagement",
+        "Topic 2": "National Crisis Response",
+        "Topic 3": "Community Development",
+        "Topic 4": "Lifestyle Education",
+        "Topic 5": "Cultural Identity"
+    }
 
     # Perform TF-IDF vectorization on the entire dataset
-    vectorizer = TfidfVectorizer(min_df=2, stop_words='english')
+    vectorizer = TfidfVectorizer(min_df=2, max_df=0.7, stop_words='english')
     dtm = vectorizer.fit_transform(df['processed_speech'])
 
     # Fit the NMF model on the entire dataset
-    nmf_model = NMF(n_components=8, random_state=42)
+    nmf_model = NMF(n_components=5, random_state=42)
     nmf_model.fit(dtm)
 
     # Extract the feature names and topic weights for the document of the selected year
     document_index = df.index[df['Year'] == year_to_display].tolist()[0]
     document_topics = nmf_model.transform(dtm[document_index])
 
-    # Sort topics by the weight in descending order
-    sorted_topics = sorted(enumerate(document_topics.flatten()), key=lambda x: x[1], reverse=True)
+    # Display metrics for topic weights horizontally
+    col1, col2, col3, col4, col5 = st.columns(5)
+    columns = [col1, col2, col3, col4, col5]
 
-    # Display the topics and their top words in descending order of weight ('relevance')
-    for index, weight in sorted_topics:
-        st.subheader(f"Topic {index + 1} - Relevance: {weight:.2f}")
-        top_words = [vectorizer.get_feature_names_out()[i] for i in nmf_model.components_[index].argsort()[-10:]]
-        st.write(" ".join(top_words))
+    for index, (col, (topic_key, topic_name)) in enumerate(zip(columns, topic_names.items())):
+        current_year_topic_weight = document_topics.flatten()[index]
+        previous_year = year_to_display - 1
+
+        # Check if there is data for the previous year
+        if previous_year in df['Year'].values:
+            previous_document_index = df.index[df['Year'] == previous_year].tolist()[0]
+            previous_year_topics = nmf_model.transform(dtm[previous_document_index])
+            previous_year_topic_weight = previous_year_topics.flatten()[index]
+            delta = current_year_topic_weight - previous_year_topic_weight
+        else:
+            # If there is no data for the previous year, set delta to None
+            delta = None
+
+        # Choose the color for the delta indicator
+        delta_color = "inverse" if (delta is not None and delta < 0) else "normal"
+
+        # Display the metric for the current year
+        with col:
+            st.metric(label=topic_name,
+                    value=f"{current_year_topic_weight:.2f}",
+                    delta=f"{delta:.2f}" if delta is not None else "N/A",
+                    delta_color=delta_color)
+            
+    # Create a DataFrame to store topic distribution for each document
+    topic_distributions = nmf_model.transform(dtm)  # This gets the topic distribution for each document
+    topic_df = pd.DataFrame(topic_distributions, columns=[topic_names[f"Topic {i+1}"] for i in range(nmf_model.n_components)])
+    topic_df['Year'] = df['Year']
+
+    # Create a DataFrame suitable for the heatmap
+    heatmap_df = topic_df.groupby('Year').mean().T
+    heatmap_df.columns = heatmap_df.columns.astype(str)  # Convert the year column names to string if they are not already
+
+    # Create the heatmap using Plotly, with the years on the X-axis and the actual topic names on the Y-axis
+    fig = px.imshow(heatmap_df,
+                    labels=dict(x="Year", y="Topic", color="Relevance"),
+                    x=heatmap_df.columns,  # Years
+                    y=heatmap_df.index,  # Topic names
+                    aspect="auto",
+                    color_continuous_scale='YlGnBu')
+    fig.update_xaxes(side="bottom")
+    fig.update_layout(title_text='Trend of Topics Over the Years', title_x=0.5, yaxis=dict(tickmode='array', tickvals=np.arange(len(topic_names))))
+
+    # This line ensures that the layout is tight and the heatmap does not have white gaps between the cells
+    fig.update_layout(autosize=False, margin=dict(t=50, l=10, r=10, b=10))
+
+    st.plotly_chart(fig, use_container_width=True)
