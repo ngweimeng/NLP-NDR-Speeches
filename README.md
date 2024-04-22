@@ -20,6 +20,9 @@ The speeches were preprocessed to enhance the NLP analysis. This involved:
 ## NLP Analysis
 Several NLP techniques were employed to analyze the speeches:
 
+### Text Summarization
+GPT (Generative Pre-trained Transformer) model from OpenAI was utilized for generating structured summaries of the speeches. Each speech is fed into the model, which is instructed to produce a summary that includes an introduction, key themes with explanations, and a conclusion.
+
 ### Sentiment Analysis
 Using `TextBlob`, we evaluated the sentiment polarity and subjectivity of each speech, aiming to capture the emotional and subjective content over the years.
 
