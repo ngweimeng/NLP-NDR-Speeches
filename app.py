@@ -43,7 +43,7 @@ with col2:
 # About the project section
 st.markdown("## About This Project")
 st.markdown("""
-            In anticipation of Prime Minister Lee Hsien Loong’s handover of leadership to DPM Lawrence Wong in May 2024, this project has been crafted to honor his significant contributions to Singapore. The project dissects the series of PM Lee’s National Day Rally speeches, showcasing his leadership and influence through the lens of Natural Language Processing.
+            In anticipation of Prime Minister Lee Hsien Loong’s handover of leadership to DPM Lawrence Wong in May 2024, this project has been crafted to honor his significant contributions to Singapore. The project dissects the series of PM Lee’s National Day Rally speeches (2004-2023), showcasing his leadership and influence through the lens of Natural Language Processing.
             
             As we approach this moment of transition, we express our sincere appreciation for PM Lee's years of unwavering dedication to Singapore’s growth and prosperity. 
 
