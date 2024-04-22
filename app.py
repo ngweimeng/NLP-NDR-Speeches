@@ -297,15 +297,15 @@ elif analysis_type == 'Topic Modeling':
 
     We utilize Non-negative Matrix Factorization (NMF), a group of algorithms in multivariate analysis and linear algebra, to analyze speeches. NMF identifies topics by decomposing the large document-term matrix, derived from the transcripts, into two meaningful smaller matrices - one representing the relationship between documents and topics, the other between topics and terms. Read more about [NMF here](https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html).
 
-    After running trials, NMF with 5 topics was chosen for its interpretability. This method helps reveal the underlying themes, as indicated by clusters of co-occurring words, thus suggesting the focal points of each speech. Here’s what each topic encompasses:
+    Through trial and error, we chose to focus on five topics because this number made the themes easiest to understand and most meaningful. Here's a peek into what each topic covers and their co-occuring words/terms:
 
-    - **Global Engagement**: International relations, trade, technological competition.
-    - **National Crisis Response**: Strategies for public health emergencies, legal frameworks, operational logistics.
-    - **Community Development**: Urban planning, housing policy, community welfare, support for the elderly.
-    - **Lifestyle Education**: Public health, preventive healthcare education, family support programs.
-    - **Cultural Identity**: Social fabric, religious harmony, multiculturalism, national unity.
+    - **Global Engagement**: This includes discussions on how Singapore interacts with the rest of the world, including trade and technological advancements. *(International relations, trade, technological competition...)*
+    - **National Crisis Response**: Here, we see strategies for tackling emergencies that affect the entire country, like public health scares or legal issues. *(Strategies for public health emergencies, legal frameworks, operational logistics...)*
+    - **Community Development**: This theme is about building a better society, like improving neighborhoods, creating housing policies, and supporting community members, especially the elderly. *(Urban planning, housing policy, community welfare, support for the elderly...)*
+    - **Health & Education**: These discussions revolve around keeping the nation healthy and well-educated, from preventing diseases to supporting families. *(Public health, preventive healthcare education, family support programs...)*
+    - **Cultural Identity**: This is all about what makes Singapore unique, including its diverse social makeup, religious practices, and sense of unity. *(Social fabric, religious harmony, multiculturalism, national unity...)*
 
-    Below is a heatmap visualization, presenting how these topics trend over the years, offering insights into the evolution of discourse and policy emphasis in Singapore.
+    The heatmap below visually tracks how these topics have come into and out of focus over the years, shedding light on what matters most to Singapore at different times.
 """)
 
     # Topic names mapping
@@ -313,23 +313,20 @@ elif analysis_type == 'Topic Modeling':
         "Topic 1": "Global Engagement",
         "Topic 2": "National Crisis Response",
         "Topic 3": "Community Development",
-        "Topic 4": "Lifestyle Education",
+        "Topic 4": "Health & Education",
         "Topic 5": "Cultural Identity"
     }
 
-    # Perform TF-IDF vectorization on the entire dataset
+    # Perform TF-IDF vectorization 
     vectorizer = TfidfVectorizer(min_df=2, max_df=0.7, stop_words='english')
     dtm = vectorizer.fit_transform(df['processed_speech'])
 
-    # Fit the NMF model on the entire dataset
     nmf_model = NMF(n_components=5, random_state=42)
     nmf_model.fit(dtm)
 
-    # Extract the feature names and topic weights for the document of the selected year
     document_index = df.index[df['Year'] == year_to_display].tolist()[0]
     document_topics = nmf_model.transform(dtm[document_index])
 
-    # Display metrics for topic weights horizontally
     col1, col2, col3, col4, col5 = st.columns(5)
     columns = [col1, col2, col3, col4, col5]
 
@@ -344,10 +341,8 @@ elif analysis_type == 'Topic Modeling':
             previous_year_topic_weight = previous_year_topics.flatten()[index]
             delta = current_year_topic_weight - previous_year_topic_weight
         else:
-            # If there is no data for the previous year, set delta to None
             delta = None
 
-        # Choose the color for the delta indicator
         delta_color = "inverse" if (delta is not None and delta < 0) else "normal"
 
         # Display the metric for the current year
@@ -366,17 +361,28 @@ elif analysis_type == 'Topic Modeling':
     heatmap_df = topic_df.groupby('Year').mean().T
     heatmap_df.columns = heatmap_df.columns.astype(str)  # Convert the year column names to string if they are not already
 
-    # Create the heatmap using Plotly, with the years on the X-axis and the actual topic names on the Y-axis
+    # Create the heatmap using Plotly
     fig = px.imshow(heatmap_df,
                     labels=dict(x="Year", y="Topic", color="Relevance"),
-                    x=heatmap_df.columns,  # Years
-                    y=heatmap_df.index,  # Topic names
+                    x=heatmap_df.columns,  
+                    y=heatmap_df.index,  
                     aspect="auto",
                     color_continuous_scale='YlGnBu')
     fig.update_xaxes(side="bottom")
     fig.update_layout(title_text='Trend of Topics Over the Years', title_x=0.5, yaxis=dict(tickmode='array', tickvals=np.arange(len(topic_names))))
 
-    # This line ensures that the layout is tight and the heatmap does not have white gaps between the cells
     fig.update_layout(autosize=False, margin=dict(t=50, l=10, r=10, b=10))
-
+    
+    fig.update_layout(xaxis=dict(
+        tickmode='linear',
+        tick0=0,
+        dtick=1  # Display a tick for every single year increment
+    )
+)
+    fig.update_layout(
+    xaxis_tickangle=-45  # Rotate the labels by -45 degrees
+)
+    fig.update_layout(
+    yaxis_tickangle=-45  # Rotate the labels by -45 degrees
+)
     st.plotly_chart(fig, use_container_width=True)
