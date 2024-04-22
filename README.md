@@ -3,7 +3,7 @@
 ## About This Project
 This project, "Leadership in Words", focuses on dissecting the series of National Day Rally speeches delivered by Prime Minister Lee Hsien Loong, using advanced Natural Language Processing (NLP) techniques. The aim is to understand the evolving leadership themes and sentiments expressed over the years as Singapore navigates through various challenges and milestones.
 
-See Streamlit app [here][https://pm-national-day-speeches.streamlit.app/]
+See Streamlit app [here](https://pm-national-day-speeches.streamlit.app/)
 
 ### Rationale
 The project was initiated in anticipation of PM Lee Hsien Loong’s handover of leadership, to explore his impact through his speeches at the National Day Rallies. By applying NLP, we aim to uncover deeper insights into the thematic and emotional undertones of his leadership narrative.
